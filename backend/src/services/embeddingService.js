@@ -141,6 +141,30 @@ class EmbeddingService {
     }
   }
 
+  async processDocumentChunks(chunks) {
+    try {
+      const texts = chunks.map(chunk => chunk.text);
+      const embeddings = await this.generateEmbeddings(texts);
+
+      // Create points for Qdrant
+      const points = embeddings.map((embedding, index) => ({
+        id: chunks[index].id,
+        vector: embedding,
+        payload: {
+          text: chunks[index].text,
+          ...chunks[index].metadata,
+          source: 'document',
+          timestamp: new Date().toISOString()
+        }
+      }));
+
+      return points;
+    } catch (error) {
+      console.error('❌ Failed to process document chunks:', error);
+      throw error;
+    }
+  }
+
   async validateCredentials() {
     try {
       if (!this.apiKey) {

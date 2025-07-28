@@ -1,12 +1,45 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const dataController = require('../controllers/dataController');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 5 // Max 5 files at once
+  },
+  fileFilter: (req, file, cb) => {
+    // Check file type - temporarily only allow text files
+    const allowedTypes = ['.txt', '.md'];
+    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    
+    if (allowedTypes.includes(fileExtension)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Unsupported file type: ${fileExtension}. Only .txt and .md files are supported in this version.`));
+    }
+  }
+});
 
 // Upload company data
 router.post('/upload', dataController.uploadCompanyData);
 
+// Upload files
+router.post('/files', upload.array('files'), dataController.uploadFiles);
+
+// Upload links
+router.post('/links', dataController.uploadLinks);
+
 // Get company data
 router.get('/company', dataController.getCompanyData);
+
+// Get documents
+router.get('/documents', dataController.getDocuments);
+
+// Delete document
+router.delete('/documents/:id', dataController.deleteDocument);
 
 // Update company data
 router.put('/company', dataController.updateCompanyData);

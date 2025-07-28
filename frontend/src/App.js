@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import ContentGenerator from './pages/ContentGenerator';
 import DataUpload from './pages/DataUpload';
+import DocumentUpload from './components/DocumentUpload';
 import HistoryPage from './pages/History';
 import Analytics from './pages/Analytics';
 
@@ -20,6 +21,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/content-generator" element={<ContentGenerator />} />
             <Route path="/data-upload" element={<DataUpload />} />
+            <Route path="/document-upload" element={<DocumentUpload />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/analytics" element={<Analytics />} />
           </Routes>

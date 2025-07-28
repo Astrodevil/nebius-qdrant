@@ -1,8 +1,12 @@
 const qdrantService = require('../services/qdrantService');
 const embeddingService = require('../services/embeddingService');
+const documentService = require('../services/documentService');
+const path = require('path');
+const fs = require('fs');
 
 // In-memory storage for demo purposes (replace with database in production)
 let companyData = null;
+let documents = [];
 
 class DataController {
   async uploadCompanyData(req, res) {
@@ -25,10 +29,15 @@ class DataController {
       }
 
       // Process company data and generate embeddings
-      const points = await embeddingService.processCompanyData(newCompanyData);
-
-      // Store in Qdrant
-      await qdrantService.addPoints(points);
+      let points = [];
+      try {
+        points = await embeddingService.processCompanyData(newCompanyData);
+        // Store in Qdrant
+        await qdrantService.addPoints(points);
+      } catch (embeddingError) {
+        console.error('❌ Embedding processing failed:', embeddingError);
+        // Continue without embeddings for now
+      }
 
       // Store in memory
       companyData = {
@@ -109,10 +118,15 @@ class DataController {
       await qdrantService.clearCollection();
 
       // Process updated data and generate new embeddings
-      const points = await embeddingService.processCompanyData(updatedData);
-
-      // Store new vectors in Qdrant
-      await qdrantService.addPoints(points);
+      let points = [];
+      try {
+        points = await embeddingService.processCompanyData(updatedData);
+        // Store new vectors in Qdrant
+        await qdrantService.addPoints(points);
+      } catch (embeddingError) {
+        console.error('❌ Embedding processing failed:', embeddingError);
+        // Continue without embeddings for now
+      }
 
       // Update in memory
       companyData = {
@@ -175,6 +189,205 @@ class DataController {
     }
   }
 
+  async uploadFiles(req, res) {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          error: 'No files uploaded'
+        });
+      }
+
+      const uploadedFiles = [];
+      const uploadDir = path.join(__dirname, '../uploads');
+
+      // Ensure upload directory exists
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      for (const file of req.files) {
+        try {
+          // Validate file type
+          if (!documentService.validateFileType(file.originalname)) {
+            throw new Error(`Unsupported file type: ${path.extname(file.originalname)}`);
+          }
+
+          // Save file temporarily
+          const filePath = path.join(uploadDir, file.filename);
+          fs.writeFileSync(filePath, file.buffer);
+
+          // Process file
+          const processedFile = await documentService.processFile(filePath, file.originalname);
+          
+          // Clean up temporary file
+          fs.unlinkSync(filePath);
+
+          uploadedFiles.push(processedFile);
+        } catch (error) {
+          console.error(`❌ Failed to process file ${file.originalname}:`, error);
+          uploadedFiles.push({
+            fileName: file.originalname,
+            error: error.message
+          });
+        }
+      }
+
+      // Process documents and generate embeddings
+      const successfulFiles = uploadedFiles.filter(f => !f.error);
+      if (successfulFiles.length > 0) {
+        try {
+          const chunks = await documentService.processDocuments(successfulFiles);
+          const points = await embeddingService.processDocumentChunks(chunks);
+          
+          // Store in Qdrant
+          await qdrantService.addPoints(points);
+        } catch (embeddingError) {
+          console.error('❌ Embedding processing failed:', embeddingError);
+          // Continue without embeddings for now
+        }
+
+        // Store in memory
+        documents.push(...successfulFiles);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Files uploaded and processed successfully',
+          uploadedFiles,
+          successfulCount: successfulFiles.length,
+          failedCount: uploadedFiles.length - successfulFiles.length,
+          totalChunks: successfulFiles.length > 0 ? await documentService.processDocuments(successfulFiles).then(chunks => chunks.length) : 0
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error uploading files:', error);
+      res.status(500).json({
+        error: 'Failed to upload files',
+        details: error.message
+      });
+    }
+  }
+
+  async uploadLinks(req, res) {
+    try {
+      const { urls } = req.body;
+
+      if (!urls || !Array.isArray(urls) || urls.length === 0) {
+        return res.status(400).json({
+          error: 'URLs array is required'
+        });
+      }
+
+      const processedUrls = [];
+      const failedUrls = [];
+
+      for (const url of urls) {
+        try {
+          // Validate URL
+          if (!documentService.validateUrl(url)) {
+            throw new Error('Invalid URL format');
+          }
+
+          // Extract content from URL
+          const extractedContent = await documentService.extractUrlContent(url);
+          processedUrls.push(extractedContent);
+        } catch (error) {
+          console.error(`❌ Failed to process URL ${url}:`, error);
+          failedUrls.push({ url, error: error.message });
+        }
+      }
+
+      // Process documents and generate embeddings
+      if (processedUrls.length > 0) {
+        try {
+          const chunks = await documentService.processDocuments(processedUrls);
+          const points = await embeddingService.processDocumentChunks(chunks);
+          
+          // Store in Qdrant
+          await qdrantService.addPoints(points);
+        } catch (embeddingError) {
+          console.error('❌ Embedding processing failed:', embeddingError);
+          // Continue without embeddings for now
+        }
+
+        // Store in memory
+        documents.push(...processedUrls);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Links processed successfully',
+          processedUrls,
+          failedUrls,
+          successfulCount: processedUrls.length,
+          failedCount: failedUrls.length,
+          totalChunks: processedUrls.length > 0 ? await documentService.processDocuments(processedUrls).then(chunks => chunks.length) : 0
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error processing links:', error);
+      res.status(500).json({
+        error: 'Failed to process links',
+        details: error.message
+      });
+    }
+  }
+
+  async getDocuments(req, res) {
+    try {
+      res.json({
+        success: true,
+        data: documents
+      });
+    } catch (error) {
+      console.error('❌ Error getting documents:', error);
+      res.status(500).json({
+        error: 'Failed to get documents',
+        details: error.message
+      });
+    }
+  }
+
+  async deleteDocument(req, res) {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        return res.status(400).json({
+          error: 'Document ID is required'
+        });
+      }
+
+      // Remove from memory
+      const documentIndex = documents.findIndex(doc => doc.id === id || doc.fileName === id || doc.url === id);
+      if (documentIndex === -1) {
+        return res.status(404).json({
+          error: 'Document not found'
+        });
+      }
+
+      const deletedDocument = documents.splice(documentIndex, 1)[0];
+
+      // TODO: Remove vectors from Qdrant (this would require tracking vector IDs)
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Document deleted successfully',
+          deletedDocument
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error deleting document:', error);
+      res.status(500).json({
+        error: 'Failed to delete document',
+        details: error.message
+      });
+    }
+  }
+
   async getDataStats(req, res) {
     try {
       let collectionInfo = null;
@@ -186,10 +399,13 @@ class DataController {
       
       const stats = {
         hasCompanyData: !!companyData,
+        hasDocuments: documents.length > 0,
+        documentCount: documents.length,
         vectorCount: collectionInfo?.points_count || 0,
         collectionSize: collectionInfo?.vectors_count || 0,
         lastUpload: companyData?.uploadedAt,
         lastUpdate: companyData?.updatedAt,
+        lastDocumentUpload: documents.length > 0 ? documents[documents.length - 1].timestamp : null,
         qdrantStatus: collectionInfo ? 'connected' : 'disconnected'
       };
 

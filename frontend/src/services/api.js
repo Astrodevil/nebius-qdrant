@@ -69,8 +69,37 @@ export const dataAPI = {
     return response.data;
   },
 
+  uploadFiles: async (files) => {
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+    
+    const response = await api.post('/api/data/files', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  uploadLinks: async (urls) => {
+    const response = await api.post('/api/data/links', { urls });
+    return response.data;
+  },
+
   getCompanyData: async () => {
     const response = await api.get('/api/data/company');
+    return response.data;
+  },
+
+  getDocuments: async () => {
+    const response = await api.get('/api/data/documents');
+    return response.data;
+  },
+
+  deleteDocument: async (id) => {
+    const response = await api.delete(`/api/data/documents/${id}`);
     return response.data;
   },
 

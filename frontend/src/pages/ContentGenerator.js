@@ -30,6 +30,13 @@ const ContentGenerator = () => {
     }
   });
 
+  const { data: documents } = useQuery('documents', dataAPI.getDocuments, {
+    retry: false,
+    onError: () => {
+      // Documents not available, continue without it
+    }
+  });
+
   const generateSuggestionsMutation = useMutation(
     contentAPI.generateSuggestions,
     {
@@ -431,6 +438,16 @@ const ContentGenerator = () => {
           {/* Results */}
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">RAG Response</h2>
+            
+            {/* Document Info */}
+            {documents?.data?.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  📚 Using {documents.data.length} uploaded document(s) for context
+                </p>
+              </div>
+            )}
+            
             {generateRAGMutation.isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">

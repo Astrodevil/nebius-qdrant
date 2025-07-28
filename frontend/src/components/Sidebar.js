@@ -6,7 +6,8 @@ import {
   Upload, 
   History, 
   BarChart3,
-  Sparkles
+  Sparkles,
+  Link
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -14,6 +15,7 @@ const Sidebar = () => {
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content Generator', href: '/content-generator', icon: Sparkles },
     { name: 'Data Upload', href: '/data-upload', icon: Upload },
+    { name: 'Document Upload', href: '/document-upload', icon: Link },
     { name: 'History', href: '/history', icon: History },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   ];
