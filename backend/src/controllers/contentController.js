@@ -1,0 +1,249 @@
+const qdrantService = require('../services/qdrantService');
+const nebiusService = require('../services/nebiusService');
+const embeddingService = require('../services/embeddingService');
+const ContentFormatter = require('../utils/formatter');
+
+// In-memory storage for demo purposes (replace with database in production)
+const suggestionHistory = [];
+
+class ContentController {
+  async generateSuggestions(req, res) {
+    try {
+      const { companyData, contentType, goals } = req.body;
+
+      if (!companyData || !contentType) {
+        return res.status(400).json({
+          error: 'Missing required fields: companyData and contentType'
+        });
+      }
+
+      // Generate suggestions using Nebius
+      const suggestions = await nebiusService.generateContentSuggestions(
+        companyData,
+        contentType,
+        goals || ''
+      );
+
+      // Store in history
+      const historyEntry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        contentType,
+        companyData,
+        goals,
+        suggestions,
+        type: 'generation'
+      };
+      suggestionHistory.push(historyEntry);
+
+      // Format the response beautifully
+      const beautifulResponse = ContentFormatter.createBeautifulResponse(
+        suggestions.data, 
+        contentType
+      );
+
+      res.json({
+        success: true,
+        data: beautifulResponse.formatted,
+        summary: beautifulResponse.summary,
+        metadata: {
+          contentType,
+          timestamp: historyEntry.timestamp,
+          id: historyEntry.id,
+          parsingSuccess: suggestions.success,
+          formatted: suggestions.success
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error generating suggestions:', error);
+      res.status(500).json({
+        error: 'Failed to generate suggestions',
+        details: error.message
+      });
+    }
+  }
+
+  async generateRAGContent(req, res) {
+    try {
+      const { query, companyData } = req.body;
+
+      if (!query) {
+        return res.status(400).json({
+          error: 'Query is required'
+        });
+      }
+
+      // Generate embedding for the query
+      const queryEmbedding = await embeddingService.processQuery(query);
+
+      // Search for similar content in Qdrant
+      const similarResults = await qdrantService.searchSimilar(queryEmbedding, 5, 0.7);
+
+      // Extract context from similar results
+      const contextData = similarResults.map(result => ({
+        text: result.payload.text,
+        type: result.payload.type,
+        score: result.score
+      }));
+
+      // Generate RAG response using Nebius
+      const ragResponse = await nebiusService.generateRAGResponse(query, contextData);
+
+      // Store in history
+      const historyEntry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        query,
+        contextData,
+        response: ragResponse,
+        type: 'rag'
+      };
+      suggestionHistory.push(historyEntry);
+
+      res.json({
+        success: true,
+        data: {
+          response: ragResponse,
+          context: contextData,
+          query
+        },
+        metadata: {
+          timestamp: historyEntry.timestamp,
+          id: historyEntry.id,
+          contextCount: contextData.length
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error generating RAG content:', error);
+      res.status(500).json({
+        error: 'Failed to generate RAG content',
+        details: error.message
+      });
+    }
+  }
+
+  async analyzeCompanyData(req, res) {
+    try {
+      const { companyData } = req.body;
+
+      if (!companyData) {
+        return res.status(400).json({
+          error: 'Company data is required'
+        });
+      }
+
+      // Analyze company data using Nebius
+      const analysis = await nebiusService.analyzeCompanyData(companyData);
+
+      // Store in history
+      const historyEntry = {
+        id: Date.now().toString(),
+        timestamp: new Date().toISOString(),
+        companyData,
+        analysis,
+        type: 'analysis'
+      };
+      suggestionHistory.push(historyEntry);
+
+      res.json({
+        success: true,
+        data: analysis,
+        metadata: {
+          timestamp: historyEntry.timestamp,
+          id: historyEntry.id
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error analyzing company data:', error);
+      res.status(500).json({
+        error: 'Failed to analyze company data',
+        details: error.message
+      });
+    }
+  }
+
+  async getHistory(req, res) {
+    try {
+      const { type, limit = 50, offset = 0 } = req.query;
+
+      let filteredHistory = suggestionHistory;
+
+      // Filter by type if specified
+      if (type) {
+        filteredHistory = suggestionHistory.filter(entry => entry.type === type);
+      }
+
+      // Apply pagination
+      const paginatedHistory = filteredHistory
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(parseInt(offset), parseInt(offset) + parseInt(limit));
+
+      res.json({
+        success: true,
+        data: paginatedHistory,
+        metadata: {
+          total: filteredHistory.length,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: parseInt(offset) + parseInt(limit) < filteredHistory.length
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error getting history:', error);
+      res.status(500).json({
+        error: 'Failed to get history',
+        details: error.message
+      });
+    }
+  }
+
+  async getStats(req, res) {
+    try {
+      const stats = {
+        totalSuggestions: suggestionHistory.length,
+        byType: {},
+        recentActivity: {
+          last24Hours: 0,
+          last7Days: 0,
+          last30Days: 0
+        }
+      };
+
+      const now = new Date();
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      suggestionHistory.forEach(entry => {
+        const entryDate = new Date(entry.timestamp);
+        
+        // Count by type
+        stats.byType[entry.type] = (stats.byType[entry.type] || 0) + 1;
+
+        // Count recent activity
+        if (entryDate >= oneDayAgo) {
+          stats.recentActivity.last24Hours++;
+        }
+        if (entryDate >= sevenDaysAgo) {
+          stats.recentActivity.last7Days++;
+        }
+        if (entryDate >= thirtyDaysAgo) {
+          stats.recentActivity.last30Days++;
+        }
+      });
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('❌ Error getting stats:', error);
+      res.status(500).json({
+        error: 'Failed to get stats',
+        details: error.message
+      });
+    }
+  }
+}
+
+module.exports = new ContentController(); 
