@@ -88,4 +88,4 @@ nebius-qdrant/
 
 ## License
 
-MIT License
+[MIT License](https://github.com/Astrodevil/nebius-qdrant/blob/main/LICENSE)
