@@ -9,19 +9,66 @@ const suggestionHistory = [];
 class ContentController {
   async generateSuggestions(req, res) {
     try {
-      const { companyData, contentType, goals } = req.body;
+      const { contentType, goals, customCompanyData } = req.body;
 
-      if (!companyData || !contentType) {
+      if (!contentType) {
         return res.status(400).json({
-          error: 'Missing required fields: companyData and contentType'
+          error: 'Content type is required'
         });
       }
 
-      // Generate suggestions using Nebius
+      // Use custom company data if provided, otherwise use default
+      const companyDataToUse = customCompanyData || {
+        description: 'A content generation platform that helps create social media posts and articles based on uploaded documents and company information.',
+        industry: 'Technology',
+        goals: [
+          'Generate engaging social media content',
+          'Create informative articles and blog posts',
+          'Provide AI-powered content suggestions'
+        ]
+      };
+
+      // Create a search query based on content type and goals
+      let searchQuery = '';
+      switch (contentType) {
+        case 'social_media_post':
+          searchQuery = goals || 'social media content engagement';
+          break;
+        case 'article':
+          searchQuery = goals || 'article content writing';
+          break;
+        case 'demo_application':
+          searchQuery = goals || 'demo application ideas development';
+          break;
+        default:
+          searchQuery = goals || 'content generation';
+      }
+
+      // Search for relevant documents in Qdrant
+      let contextData = [];
+      try {
+        const queryEmbedding = await embeddingService.processQuery(searchQuery);
+        const similarResults = await qdrantService.searchSimilar(queryEmbedding, 5, 0.5);
+        
+        contextData = similarResults.map(result => ({
+          text: result.payload.text,
+          type: result.payload.type,
+          source: result.payload.source,
+          score: result.score
+        }));
+        
+        console.log(`🔍 Found ${contextData.length} relevant documents for ${contentType} generation`);
+      } catch (error) {
+        console.log('⚠️ Could not search Qdrant for context:', error.message);
+        // Continue without context
+      }
+
+      // Generate suggestions using Nebius with context
       const suggestions = await nebiusService.generateContentSuggestions(
-        companyData,
+        companyDataToUse,
         contentType,
-        goals || ''
+        goals || '',
+        contextData
       );
 
       // Store in history
@@ -29,8 +76,9 @@ class ContentController {
         id: Date.now().toString(),
         timestamp: new Date().toISOString(),
         contentType,
-        companyData,
+        companyData: companyDataToUse,
         goals,
+        contextData,
         suggestions,
         type: 'generation'
       };
@@ -51,7 +99,8 @@ class ContentController {
           timestamp: historyEntry.timestamp,
           id: historyEntry.id,
           parsingSuccess: suggestions.success,
-          formatted: suggestions.success
+          formatted: suggestions.success,
+          documentsUsed: contextData.length
         }
       });
     } catch (error) {

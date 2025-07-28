@@ -126,44 +126,54 @@ class NebiusService {
     return response.data.result.alternatives[0].message.text;
   }
 
-  async generateContentSuggestions(companyData, contentType, goals) {
+  async generateContentSuggestions(companyData, contentType, goals, contextData = []) {
+    // Build context information from uploaded documents
+    let contextInfo = '';
+    if (contextData && contextData.length > 0) {
+      contextInfo = `\n\nRelevant Context from Uploaded Documents:\n`;
+      contextData.forEach((doc, index) => {
+        contextInfo += `${index + 1}. Source: ${doc.source || 'Document'}\n`;
+        contextInfo += `   Content: ${doc.text.substring(0, 200)}${doc.text.length > 200 ? '...' : ''}\n\n`;
+      });
+    }
+
     const contentPrompts = {
-      articles: `Based on the following company information, suggest 3 article ideas that align with the company's goals:
+      article: `Based on the following company information and uploaded documents, suggest 3 article ideas that align with the company's goals and reference the uploaded content:
 
 Company Data: ${JSON.stringify(companyData)}
-Company Goals: ${goals}
+Company Goals: ${goals}${contextInfo}
 
 Please provide:
 1. Article title
 2. Brief description (2-3 sentences)
-3. Key points to cover
+3. Key points to cover (reference uploaded documents when relevant)
 4. Target audience
 5. Estimated reading time
 
 Format as JSON array with objects containing: title, description, keyPoints, targetAudience, readingTime.`,
 
-      demos: `Based on the following company information, suggest 3 demo ideas that showcase the company's capabilities:
+      demo_application: `Based on the following company information and uploaded documents, suggest 3 demo application ideas that showcase the company's capabilities and leverage the uploaded content:
 
 Company Data: ${JSON.stringify(companyData)}
-Company Goals: ${goals}
+Company Goals: ${goals}${contextInfo}
 
 Please provide:
 1. Demo title
-2. Demo description
+2. Demo description (how it relates to uploaded documents)
 3. Key features to highlight
 4. Target audience
 5. Estimated demo duration
 
 Format as JSON array with objects containing: title, description, keyFeatures, targetAudience, duration.`,
 
-      socialMedia: `Based on the following company information, suggest 5 social media post ideas:
+      social_media_post: `Based on the following company information and uploaded documents, suggest 5 social media post ideas that reference and promote the uploaded content:
 
 Company Data: ${JSON.stringify(companyData)}
-Company Goals: ${goals}
+Company Goals: ${goals}${contextInfo}
 
 Please provide:
 1. Post title/headline
-2. Post content (2-3 sentences)
+2. Post content (2-3 sentences, reference uploaded documents)
 3. Suggested hashtags
 4. Best platform (LinkedIn, Twitter, Instagram, etc.)
 5. Engagement strategy
@@ -172,7 +182,7 @@ Format as JSON array with objects containing: title, content, hashtags, platform
     };
 
     try {
-      const prompt = contentPrompts[contentType] || contentPrompts.articles;
+      const prompt = contentPrompts[contentType] || contentPrompts.article;
       const response = await this.generateText(prompt, 'meta-llama/Llama-3.3-70B-Instruct', 1500);
       
       // Try to extract and parse JSON from the response

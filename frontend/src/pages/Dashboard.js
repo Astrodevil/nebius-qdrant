@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Users,
   Target,
-  Activity
+  Activity,
+  Database
 } from 'lucide-react';
 import { contentAPI, dataAPI } from '../services/api';
 
@@ -33,17 +34,17 @@ const Dashboard = () => {
       color: 'bg-blue-500',
     },
     {
-      title: 'Upload Data',
-      description: 'Add company information and goals',
+      title: 'Upload Documents',
+      description: 'Add documents and URLs for RAG content generation',
       icon: Upload,
-      href: '/data-upload',
+      href: '/document-upload',
       color: 'bg-green-500',
     },
     {
-      title: 'View History',
-      description: 'Check previous suggestions and analytics',
-      icon: FileText,
-      href: '/history',
+      title: 'Data Management',
+      description: 'View system status and manage data',
+      icon: Database,
+      href: '/data-upload',
       color: 'bg-purple-500',
     },
     {
@@ -180,9 +181,9 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="flex items-center space-x-3">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-sm text-gray-600">
-                No company data uploaded yet
+                Default company data available
               </span>
             </div>
           )}

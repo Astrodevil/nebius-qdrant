@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
 
 class EmbeddingService {
   constructor() {
@@ -115,7 +116,7 @@ class EmbeddingService {
 
       // Create points for Qdrant
       const points = embeddings.map((embedding, index) => ({
-        id: `${Date.now()}_${index}`,
+        id: uuidv4(), // Use UUID instead of simple integer
         vector: embedding,
         payload: {
           text: texts[index],

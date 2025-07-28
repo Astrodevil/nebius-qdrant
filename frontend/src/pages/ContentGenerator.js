@@ -23,13 +23,6 @@ const ContentGenerator = () => {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  const { data: companyData } = useQuery('companyData', dataAPI.getCompanyData, {
-    retry: false,
-    onError: () => {
-      // Company data not available, continue without it
-    }
-  });
-
   const { data: documents } = useQuery('documents', dataAPI.getDocuments, {
     retry: false,
     onError: () => {
@@ -65,13 +58,8 @@ const ContentGenerator = () => {
 
   const onSubmitSuggestions = (data) => {
     const payload = {
-      companyData: companyData?.data || {
-        description: data.description,
-        goals: data.goals ? data.goals.split('\n').filter(g => g.trim()) : [],
-        targets: data.targets ? data.targets.split('\n').filter(t => t.trim()) : []
-      },
       contentType: data.contentType,
-      goals: data.additionalGoals
+      goals: data.additionalGoals || ''
     };
 
     generateSuggestionsMutation.mutate(payload);
@@ -79,8 +67,7 @@ const ContentGenerator = () => {
 
   const onSubmitRAG = (data) => {
     const payload = {
-      query: data.query,
-      companyData: companyData?.data || {}
+      query: data.query
     };
 
     generateRAGMutation.mutate(payload);
@@ -98,28 +85,16 @@ const ContentGenerator = () => {
     
     let formatted = `${suggestion.title || suggestion.post_title || 'Post'}\n\n`;
     formatted += `${content}\n\n`;
+    if (hashtags) formatted += `${hashtags}\n\n`;
+    if (engagement) formatted += `Engagement Strategy: ${engagement}`;
     
-    if (hashtags) {
-      formatted += `${hashtags}\n\n`;
-    }
-    
-    if (engagement) {
-      formatted += `Engagement: ${engagement}`;
-    }
-    
-    return formatted.trim();
+    return formatted;
   };
 
   const submitFeedback = (suggestionId, rating) => {
-    // In a real app, you would call the feedback API here
-    toast.success(`Feedback submitted: ${rating} stars`);
+    // TODO: Implement feedback submission
+    toast.success(`Feedback submitted: ${rating === 'up' ? '👍' : '👎'}`);
   };
-
-  const contentTypes = [
-    { value: 'articles', label: 'Articles', icon: FileText },
-    { value: 'demos', label: 'Demo Ideas', icon: Play },
-    { value: 'socialMedia', label: 'Social Media Posts', icon: Share2 }
-  ];
 
   return (
     <div className="space-y-6">
@@ -142,7 +117,6 @@ const ContentGenerator = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Sparkles className="inline h-4 w-4 mr-2" />
             Content Suggestions
           </button>
           <button
@@ -153,355 +127,221 @@ const ContentGenerator = () => {
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <Search className="inline h-4 w-4 mr-2" />
             RAG Query
           </button>
         </nav>
       </div>
 
-      {/* Content Suggestions Tab */}
-      {activeTab === 'suggestions' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Form */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Generate Suggestions</h2>
-            <form onSubmit={handleSubmit(onSubmitSuggestions)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Content Type
-                </label>
-                <select
-                  {...register('contentType', { required: 'Content type is required' })}
-                  className="input-field"
-                >
-                  <option value="">Select content type</option>
-                  {contentTypes.map((type) => {
-                    const Icon = type.icon;
-                    return (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    );
-                  })}
-                </select>
-                {errors.contentType && (
-                  <p className="text-red-600 text-sm mt-1">{errors.contentType.message}</p>
-                )}
-              </div>
-
-              {!companyData?.data && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Company Description
-                    </label>
-                    <textarea
-                      {...register('description', { required: 'Description is required' })}
-                      rows={3}
-                      className="textarea-field"
-                      placeholder="Describe your company, products, and services..."
-                    />
-                    {errors.description && (
-                      <p className="text-red-600 text-sm mt-1">{errors.description.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Goals (one per line)
-                    </label>
-                    <textarea
-                      {...register('goals')}
-                      rows={3}
-                      className="textarea-field"
-                      placeholder="Enter your company goals..."
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Targets (one per line)
-                    </label>
-                    <textarea
-                      {...register('targets')}
-                      rows={3}
-                      className="textarea-field"
-                      placeholder="Enter your target audiences..."
-                    />
-                  </div>
-                </>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Additional Goals/Context
-                </label>
-                <textarea
-                  {...register('additionalGoals')}
-                  rows={2}
-                  className="textarea-field"
-                  placeholder="Any specific goals or context for this content..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={generateSuggestionsMutation.isLoading}
-                className="btn-primary w-full flex items-center justify-center"
-              >
-                {generateSuggestionsMutation.isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Suggestions
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Results */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Suggestions</h2>
-            {generateSuggestionsMutation.isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
-                  <p className="text-gray-600">Generating suggestions...</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Panel - Form */}
+        <div className="space-y-6">
+          {activeTab === 'suggestions' ? (
+            <div className="card">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Generate Suggestions</h2>
+              <form onSubmit={handleSubmit(onSubmitSuggestions)} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Content Type *
+                  </label>
+                  <select
+                    {...register('contentType', { required: 'Content type is required' })}
+                    className="input-field"
+                  >
+                    <option value="">Select content type</option>
+                    <option value="social_media_post">Social Media Post</option>
+                    <option value="article">Article</option>
+                    <option value="demo_application">Demo Application Ideas</option>
+                  </select>
+                  {errors.contentType && (
+                    <p className="text-red-600 text-sm mt-1">{errors.contentType.message}</p>
+                  )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Additional Goals/Context (Optional)
+                  </label>
+                  <textarea
+                    {...register('additionalGoals')}
+                    rows={3}
+                    className="textarea-field"
+                    placeholder="Any specific goals, tone, or context for the content..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={generateSuggestionsMutation.isLoading}
+                  className="btn-primary w-full flex items-center justify-center"
+                >
+                  {generateSuggestionsMutation.isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Content
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div className="card">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">RAG Query</h2>
+              <form onSubmit={handleSubmit(onSubmitRAG)} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Query *
+                  </label>
+                  <textarea
+                    {...register('query', { required: 'Query is required' })}
+                    rows={4}
+                    className="textarea-field"
+                    placeholder="Ask a question about your uploaded documents..."
+                  />
+                  {errors.query && (
+                    <p className="text-red-600 text-sm mt-1">{errors.query.message}</p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={generateRAGMutation.isLoading}
+                  className="btn-primary w-full flex items-center justify-center"
+                >
+                  {generateRAGMutation.isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4 mr-2" />
+                      Generate RAG Response
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* Info Card */}
+          <div className="card bg-blue-50 border-blue-200">
+            <div className="flex items-start">
+              <Sparkles className="h-6 w-6 text-blue-600 mr-3 mt-1" />
+              <div>
+                <h3 className="font-semibold text-blue-900">How It Works</h3>
+                <p className="text-blue-700 text-sm mt-1">
+                  {activeTab === 'suggestions' 
+                    ? 'Generate content using default company data and uploaded documents as reference. Upload documents to enable more contextual suggestions.'
+                    : 'Ask questions about your uploaded documents. The AI will search through your content and provide relevant answers.'
+                  }
+                </p>
               </div>
-            ) : suggestions ? (
-              <div className="space-y-6">
-                {/* Summary */}
-                {Array.isArray(suggestions) && suggestions.length > 2 && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-blue-800 text-sm">
-                      Generated {suggestions.length} posts. Showing the first 2 below.
+            </div>
+          </div>
+        </div>
+
+        {/* Right Panel - Results */}
+        <div className="card">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            {activeTab === 'suggestions' ? 'Generated Suggestions' : 'RAG Response'}
+          </h2>
+          
+          {activeTab === 'suggestions' ? (
+            suggestions ? (
+              <div className="space-y-4">
+                {/* Context Info */}
+                {suggestions.metadata?.documentsUsed > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <p className="text-green-800 text-sm">
+                      📚 Generated using {suggestions.metadata.documentsUsed} uploaded document(s) as reference
                     </p>
                   </div>
                 )}
                 
-                {Array.isArray(suggestions) ? (
-                  suggestions.slice(0, 2).map((suggestion, index) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white">
-                      {/* Header with title and platform */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {suggestion.title || suggestion.post_title || `Post ${index + 1}`}
-                          </h3>
-                          {suggestion.platform && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {suggestion.platformIcon || '📱'} {suggestion.platform}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => copyToClipboard(formatPostForCopy(suggestion))}
-                            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-                            title="Copy post content"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => submitFeedback(`suggestion_${index}`, 5)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Like this post"
-                          >
-                            <ThumbsUp className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => submitFeedback(`suggestion_${index}`, 1)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Dislike this post"
-                          >
-                            <ThumbsDown className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Post content */}
-                      <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Content:</h4>
-                        <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
-                          <p className="text-gray-800 leading-relaxed">
-                            {suggestion.content || suggestion.post_content || suggestion.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Hashtags */}
-                      {suggestion.hashtags && suggestion.hashtags.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Hashtags:</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {(suggestion.formattedHashtags || suggestion.hashtags).map((tag, tagIndex) => (
-                              <span
-                                key={tagIndex}
-                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Engagement strategy */}
-                      {suggestion.engagementStrategy && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 mb-2">Engagement Strategy:</h4>
-                          <div className="bg-yellow-50 rounded-lg p-3 border-l-4 border-yellow-500">
-                            <p className="text-gray-700 text-sm">
-                              {suggestion.engagementStrategy}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Copy full post button */}
-                      <div className="flex justify-end">
+                {suggestions.map((suggestion, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900">
+                        {suggestion.title || suggestion.post_title || `Suggestion ${index + 1}`}
+                      </h3>
+                      <div className="flex space-x-2">
                         <button
                           onClick={() => copyToClipboard(formatPostForCopy(suggestion))}
-                          className="btn-secondary flex items-center text-sm"
+                          className="text-gray-400 hover:text-gray-600"
                         >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Copy Full Post
+                          <Copy className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => submitFeedback(index, 'up')}
+                          className="text-gray-400 hover:text-green-600"
+                        >
+                          <ThumbsUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => submitFeedback(index, 'down')}
+                          className="text-gray-400 hover:text-red-600"
+                        >
+                          <ThumbsDown className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-gray-600">
-                    <pre className="whitespace-pre-wrap text-sm">{JSON.stringify(suggestions, null, 2)}</pre>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center text-gray-500 py-12">
-                <Sparkles className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No suggestions generated yet</p>
-                <p className="text-sm">Fill out the form and click generate to get started</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* RAG Query Tab */}
-      {activeTab === 'rag' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Form */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">RAG Query</h2>
-            <form onSubmit={handleSubmit(onSubmitRAG)} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Query
-                </label>
-                <textarea
-                  {...register('query', { required: 'Query is required' })}
-                  rows={4}
-                  className="textarea-field"
-                  placeholder="Ask a question or describe what you're looking for..."
-                />
-                {errors.query && (
-                  <p className="text-red-600 text-sm mt-1">{errors.query.message}</p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                disabled={generateRAGMutation.isLoading}
-                className="btn-primary w-full flex items-center justify-center"
-              >
-                {generateRAGMutation.isLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating Response...
-                  </>
-                ) : (
-                  <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Generate RAG Response
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-
-          {/* Results */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">RAG Response</h2>
-            
-            {/* Document Info */}
-            {documents?.data?.length > 0 && (
-              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  📚 Using {documents.data.length} uploaded document(s) for context
-                </p>
-              </div>
-            )}
-            
-            {generateRAGMutation.isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary-600" />
-                  <p className="text-gray-600">Generating response...</p>
-                </div>
-              </div>
-            ) : ragResponse ? (
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Query:</h4>
-                  <p className="text-gray-700">{ragResponse.query}</p>
-                </div>
-                
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Response:</h4>
-                  <p className="text-gray-700 whitespace-pre-wrap">{ragResponse.response}</p>
-                </div>
-
-                {ragResponse.context && ragResponse.context.length > 0 && (
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Context Sources:</h4>
-                    <div className="space-y-2">
-                      {ragResponse.context.map((ctx, index) => (
-                        <div key={index} className="text-sm text-gray-600">
-                          <span className="font-medium">Type:</span> {ctx.type} | 
-                          <span className="font-medium ml-2">Score:</span> {ctx.score?.toFixed(3)} | 
-                          <span className="font-medium ml-2">Text:</span> {ctx.text.substring(0, 100)}...
+                    
+                    <div className="prose prose-sm max-w-none">
+                      <p className="text-gray-700 mb-3">
+                        {suggestion.content || suggestion.post_content || suggestion.description}
+                      </p>
+                      
+                      {suggestion.formattedHashtags && suggestion.formattedHashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {suggestion.formattedHashtags.map((hashtag, i) => (
+                            <span key={i} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                              {hashtag}
+                            </span>
+                          ))}
                         </div>
-                      ))}
+                      )}
+                      
+                      {suggestion.engagementStrategy && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <p className="text-sm text-gray-600">
+                            <strong>Engagement Strategy:</strong> {suggestion.engagementStrategy}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => copyToClipboard(ragResponse.response)}
-                    className="btn-secondary flex items-center"
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Response
-                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Sparkles className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No suggestions generated yet</p>
+                <p className="text-sm text-gray-400">Fill out the form and click generate to get started</p>
+              </div>
+            )
+          ) : (
+            ragResponse ? (
+              <div className="prose prose-sm max-w-none">
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Response:</h4>
+                  <p className="text-gray-700">{ragResponse}</p>
                 </div>
               </div>
             ) : (
-              <div className="text-center text-gray-500 py-12">
-                <Search className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>No RAG response generated yet</p>
-                <p className="text-sm">Enter a query and click generate to get started</p>
+              <div className="text-center py-12">
+                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No RAG response yet</p>
+                <p className="text-sm text-gray-400">Ask a question about your documents to get started</p>
               </div>
-            )}
-          </div>
+            )
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

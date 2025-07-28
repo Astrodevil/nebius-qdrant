@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Home, 
   FileText, 
-  Upload, 
+  Database, 
   History, 
   BarChart3,
   Sparkles,
@@ -14,7 +14,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/', icon: Home },
     { name: 'Content Generator', href: '/content-generator', icon: Sparkles },
-    { name: 'Data Upload', href: '/data-upload', icon: Upload },
+    { name: 'Data Management', href: '/data-upload', icon: Database },
     { name: 'Document Upload', href: '/document-upload', icon: Link },
     { name: 'History', href: '/history', icon: History },
     { name: 'Analytics', href: '/analytics', icon: BarChart3 },

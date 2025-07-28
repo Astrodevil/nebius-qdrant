@@ -5,6 +5,7 @@ const path = require('path');
 // const { PDFExtract } = require('pdf.js-extract');
 // const mammoth = require('mammoth');
 const cheerio = require('cheerio');
+const { v4: uuidv4 } = require('uuid');
 
 class DocumentService {
   constructor() {
@@ -162,7 +163,7 @@ class DocumentService {
         
         chunks.forEach((chunk, index) => {
           processedChunks.push({
-            id: `${doc.id || doc.fileName || doc.url}_chunk_${index}`,
+            id: uuidv4(), // Use UUID instead of URL-based ID
             text: chunk,
             metadata: {
               source: doc.fileName || doc.url,
