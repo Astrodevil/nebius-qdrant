@@ -18,18 +18,18 @@ class NebiusService {
         throw new Error('Nebius API credentials not configured');
       }
 
-      // Try Studio API first
-      if (this.useStudioAPI) {
-        try {
-          return await this.generateTextWithStudioAPI(prompt, model, maxTokens);
-        } catch (error) {
-          console.warn('⚠️ Studio API failed, falling back to foundation models API');
-          this.useStudioAPI = false;
-          return await this.generateTextWithFoundationAPI(prompt, model, maxTokens);
-        }
-      } else {
-        // Use foundation models API
-        return await this.generateTextWithFoundationAPI(prompt, model, maxTokens);
+      // Use Studio API only for now
+      try {
+        console.log('🔗 Using Studio API...');
+        return await this.generateTextWithStudioAPI(prompt, model, maxTokens);
+      } catch (error) {
+        console.error('❌ Studio API failed:', error.message);
+        console.error('❌ Error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url
+        });
+        throw error;
       }
     } catch (error) {
       console.error('❌ Nebius API error:', error.response?.data || error.message);

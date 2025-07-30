@@ -329,7 +329,27 @@ const ContentGenerator = () => {
               <div className="prose prose-sm max-w-none">
                 <div className="bg-gray-50 p-4 rounded-lg mb-4">
                   <h4 className="font-semibold text-gray-900 mb-2">Response:</h4>
-                  <p className="text-gray-700">{ragResponse}</p>
+                  <p className="text-gray-700">{ragResponse.response}</p>
+                </div>
+                
+                {ragResponse.context && ragResponse.context.length > 0 && (
+                  <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 className="font-semibold text-blue-900 mb-2">Context Sources:</h4>
+                    <div className="space-y-2">
+                      {ragResponse.context.map((ctx, index) => (
+                        <div key={index} className="text-sm">
+                          <p className="text-blue-800 font-medium">Source {index + 1} (Score: {ctx.score?.toFixed(3) || 'N/A'}):</p>
+                          <p className="text-blue-700 text-xs">{ctx.text.substring(0, 150)}...</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <p className="text-sm text-green-800">
+                    <strong>Query:</strong> {ragResponse.query}
+                  </p>
                 </div>
               </div>
             ) : (
