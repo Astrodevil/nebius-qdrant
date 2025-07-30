@@ -1,6 +1,6 @@
 # Nebius-Qdrant Content Generation Platform
 
-A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant vector database. The platform supports RAG (Retrieval-Augmented Generation) for context-aware content creation.
+A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant vector database. The platform uses RAG (Retrieval-Augmented Generation) to help with social media posts, application ideas and article generation with context from uploaded documents.
 
 ## Quick Start
 
@@ -47,10 +47,10 @@ cd frontend && npm install && npm start
 
 ## Current Workflows
 
-The platform supports three main workflows for content generation:
+The platform supports two main workflows for content generation:
 
 ### 1. Content Generation Workflow
-**Purpose**: Generate AI-powered content suggestions for various content types.
+**Purpose**: Generate AI-powered content suggestions for various content types with optional document context.
 
 **Content Types**:
 - **Social Media Posts**: Generate engaging posts for LinkedIn, Twitter, Instagram, etc.
@@ -60,7 +60,8 @@ The platform supports three main workflows for content generation:
 **Process**:
 1. Select content type (social media, article, or demo)
 2. Add optional goals or requirements
-3. AI generates multiple suggestions with:
+3. Optionally provide document context for RAG-enhanced generation
+4. AI generates multiple suggestions with:
    - Titles and descriptions
    - Key points or features
    - Target audience
@@ -69,12 +70,12 @@ The platform supports three main workflows for content generation:
 
 **Features**:
 - Uses Nebius AI (Llama-3.3-70B-Instruct model)
-- Incorporates uploaded document context
+- RAG-enhanced generation using uploaded document context
 - Provides formatted, ready-to-use content
 - Stores generation history
 
 ### 2. Document Upload & Processing Workflow
-**Purpose**: Upload and process documents for RAG-enabled content generation.
+**Purpose**: Upload and process documents to provide context for RAG-enhanced content generation.
 
 **Supported Formats**:
 - Text files (.txt, .md)
@@ -88,28 +89,14 @@ The platform supports three main workflows for content generation:
 3. Document chunking (1000 words with 200-word overlap)
 4. Vector embedding generation using OpenAI
 5. Storage in Qdrant vector database
-6. Semantic search capabilities
+6. Context retrieval for content generation
 
 **Features**:
 - Automatic content extraction from URLs
 - Intelligent document chunking
 - Vector embedding for semantic search
 - UUID-based point IDs for reliability
-
-### 3. RAG (Retrieval-Augmented Generation) Workflow
-**Purpose**: Generate context-aware responses based on uploaded documents.
-
-**Process**:
-1. Ask questions about uploaded documents
-2. System searches for relevant document chunks
-3. AI generates responses using document context
-4. Provides source references and confidence scores
-
-**Features**:
-- Semantic search with similarity scoring
-- Context-aware AI responses
-- Source attribution
-- Real-time query processing
+- Context-aware content generation
 
 ## Local Development
 
@@ -216,8 +203,7 @@ nebius-qdrant/
 ## API Endpoints
 
 ### Content Generation
-- `POST /api/content/suggest` - Generate content suggestions
-- `POST /api/content/rag` - Generate RAG responses
+- `POST /api/content/suggest` - Generate content suggestions with optional RAG context
 - `GET /api/content/stats` - Get content statistics
 - `GET /api/content/history` - Get generation history
 
@@ -234,9 +220,9 @@ nebius-qdrant/
 ## Features
 
 - **AI-Powered Content**: Uses Nebius AI (Llama-3.3-70B-Instruct) for high-quality content generation
-- **Vector Search**: Qdrant integration for semantic search and similarity matching
+- **RAG-Enhanced Generation**: Context-aware content creation using uploaded documents
 - **Document Processing**: Automatic chunking, embedding, and storage
-- **RAG Capabilities**: Context-aware content generation using uploaded documents
+- **Vector Search**: Qdrant integration for semantic search and context retrieval
 - **Modern UI**: Clean, responsive React interface with Tailwind CSS
 - **Real-time Processing**: Live content generation and document processing
 - **Multi-format Support**: Text files, URLs, JSON, and CSV processing
