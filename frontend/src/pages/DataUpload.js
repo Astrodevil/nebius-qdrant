@@ -198,7 +198,7 @@ const DataUpload = () => {
         <div className="flex items-start">
           <Database className="h-6 w-6 text-blue-600 mr-3 mt-1" />
           <div>
-            <h3 className="font-semibold text-blue-900">How It Works</h3>
+            <h3 className="font-semibold text-blue-900">How it works</h3>
             <p className="text-blue-700 text-sm mt-1">
               The app uses default company data to generate content. Upload documents to enable RAG (Retrieval-Augmented Generation) 
               for more contextual content suggestions. Your documents are automatically processed and stored as vector embeddings in Qdrant.
