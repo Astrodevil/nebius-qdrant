@@ -2,6 +2,8 @@
 
 A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant vector database. The platform uses RAG (Retrieval-Augmented Generation) to help with social media posts, application ideas and article generation with context from uploaded documents.
 
+![Landing page](./images/landing.png)
+
 ## Quick Start
 
 ### Prerequisites
