@@ -1,14 +1,12 @@
 # Nebius-Qdrant Content Generation Platform
 
-A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant Cloud vector database. The platform uses RAG (Retrieval-Augmented Generation) to help with social media posts, application ideas and article generation with context from uploaded documents.
-
+An AI-powered content generation platform that helps in creating social media posts, articles, and demo applications using a RAG pipeline built with Nebius and Qdrant Cloud vector database. 
 ![Landing page](./images/landing.png)
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+
-- Docker and Docker Compose (optional, for containerized deployment)
 - Nebius API key
 - Qdrant Cloud account and API key
 
@@ -39,10 +37,6 @@ REACT_APP_API_TIMEOUT=30000
 
 3. **Start the application:**
 ```bash
-# Start with Docker (recommended for production)
-docker-compose up -d
-
-# Or start manually for development
 cd backend && npm install && npm start
 cd frontend && npm install && npm start
 ```
