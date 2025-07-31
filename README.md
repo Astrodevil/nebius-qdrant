@@ -1,6 +1,6 @@
 # Nebius-Qdrant Content Generation Platform
 
-A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant vector database. The platform uses RAG (Retrieval-Augmented Generation) to help with social media posts, application ideas and article generation with context from uploaded documents.
+A modern content generation platform that creates social media posts, articles, and demo applications using Nebius AI and Qdrant Cloud vector database. The platform uses RAG (Retrieval-Augmented Generation) to help with social media posts, application ideas and article generation with context from uploaded documents.
 
 ![Landing page](./images/landing.png)
 
@@ -8,9 +8,9 @@ A modern content generation platform that creates social media posts, articles, 
 
 ### Prerequisites
 - Node.js 18+
-- Docker and Docker Compose
+- Docker and Docker Compose (optional, for containerized deployment)
 - Nebius API key
-- Nebius API key (for both embeddings and content generation)
+- Qdrant Cloud account and API key
 
 ### Setup
 
@@ -27,7 +27,8 @@ cp frontend/env.example frontend/.env
 # Backend (.env)
 PORT=3001
 NODE_ENV=development
-QDRANT_URL=http://localhost:6333
+QDRANT_URL=https://your-cluster-id.us-east-1-0.aws.cloud.qdrant.io:6333
+QDRANT_API_KEY=your_qdrant_cloud_api_key_here
 NEBIUS_API_KEY=your_nebius_api_key_here
 CORS_ORIGIN=http://localhost:3000
 
@@ -38,7 +39,7 @@ REACT_APP_API_TIMEOUT=30000
 
 3. **Start the application:**
 ```bash
-# Start all services with Docker
+# Start with Docker (recommended for production)
 docker-compose up -d
 
 # Or start manually for development
@@ -128,18 +129,11 @@ cp frontend/env.example frontend/.env
 
 # Edit backend/.env with your API keys
 NEBIUS_API_KEY=your_nebius_api_key
+QDRANT_URL=https://your-cluster-id.us-east-1-0.aws.cloud.qdrant.io:6333
+QDRANT_API_KEY=your_qdrant_cloud_api_key
 ```
 
-4. **Start Qdrant database:**
-```bash
-# Using Docker
-docker run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant:latest
-
-# Or using docker-compose for just Qdrant
-docker-compose up qdrant -d
-```
-
-5. **Start development servers:**
+4. **Start development servers:**
 ```bash
 # Terminal 1: Backend
 cd backend
@@ -153,12 +147,11 @@ npm start
 ### Development URLs
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:3001
-- **Qdrant**: http://localhost:6333
 
 ### Development Features
 - Hot reloading for both frontend and backend
 - Real-time API testing
-- Vector database management
+- Vector database management via Qdrant Cloud
 - Content generation history
 - Document processing logs
 
@@ -174,7 +167,7 @@ nebius-qdrant/
 │   │   │   └── feedbackController.js   # User feedback handling
 │   │   ├── services/        # Business logic
 │   │   │   ├── nebiusService.js        # Nebius AI integration
-│   │   │   ├── qdrantService.js        # Vector database operations
+│   │   │   ├── qdrantService.js        # Qdrant Cloud operations
 │   │   │   ├── embeddingService.js     # Nebius AI embeddings
 │   │   │   └── documentService.js      # Document processing
 │   │   └── utils/          # Utilities
@@ -197,7 +190,7 @@ nebius-qdrant/
 │   │   └── services/      # API client
 │   │       └── api.js                  # API integration
 │   └── public/            # Static assets
-└── docker-compose.yml     # Docker configuration
+└── docker-compose.yml     # Docker configuration (backend + frontend only)
 ```
 
 ## API Endpoints
@@ -222,7 +215,7 @@ nebius-qdrant/
 - **AI-Powered Content**: Uses Nebius AI Studio (Llama-3.3-70B-Instruct for generation, Qwen/Qwen3-Embedding-8B for embeddings) for high-quality content generation
 - **RAG-Enhanced Generation**: Context-aware content creation using uploaded documents
 - **Document Processing**: Automatic chunking, embedding, and storage
-- **Vector Search**: Qdrant integration for semantic search and context retrieval
+- **Vector Search**: Qdrant Cloud integration for semantic search and context retrieval
 - **Modern UI**: Clean, responsive React interface with Tailwind CSS
 - **Real-time Processing**: Live content generation and document processing
 - **Multi-format Support**: Text files, URLs, JSON, and CSV processing
