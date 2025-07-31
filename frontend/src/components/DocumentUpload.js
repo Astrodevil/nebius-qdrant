@@ -21,6 +21,7 @@ const DocumentUpload = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [urls, setUrls] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(new Set());
   const queryClient = useQueryClient();
 
   const { data: documents, isLoading: documentsLoading } = useQuery(
@@ -38,11 +39,20 @@ const DocumentUpload = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries('documents');
       queryClient.invalidateQueries('dataStats');
-      toast.success(`Successfully processed ${data.data.successfulCount} files!`);
+      
+      if (data.data.failedCount > 0) {
+        toast.success(`Successfully processed ${data.data.successfulCount} files! ${data.data.failedCount} files failed.`);
+      } else {
+        toast.success(`Successfully processed ${data.data.successfulCount} files!`);
+      }
+      
       setUploadedFiles([]);
+      setUploadingFiles(new Set());
     },
     onError: (error) => {
-      toast.error('Failed to upload files');
+      const errorMessage = error.response?.data?.error || 'Failed to upload files';
+      toast.error(errorMessage);
+      setUploadingFiles(new Set());
     }
   });
 
@@ -71,7 +81,26 @@ const DocumentUpload = () => {
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
-    setUploadedFiles(prev => [...prev, ...files]);
+    
+    // Validate file types and sizes
+    const validFiles = files.filter(file => {
+      const extension = file.name.toLowerCase().split('.').pop();
+      const allowedTypes = ['docx', 'txt', 'md'];
+      
+      if (!allowedTypes.includes(extension)) {
+        toast.error(`Unsupported file type: ${file.name}. Only DOCX, TXT, and MD files are supported.`);
+        return false;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        toast.error(`File too large: ${file.name}. Maximum size is 10MB.`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    setUploadedFiles(prev => [...prev, ...validFiles]);
   };
 
   const handleDrag = (e) => {
@@ -91,7 +120,26 @@ const DocumentUpload = () => {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const files = Array.from(e.dataTransfer.files);
-      setUploadedFiles(prev => [...prev, ...files]);
+      
+      // Validate file types and sizes
+      const validFiles = files.filter(file => {
+        const extension = file.name.toLowerCase().split('.').pop();
+        const allowedTypes = ['docx', 'txt', 'md'];
+        
+        if (!allowedTypes.includes(extension)) {
+          toast.error(`Unsupported file type: ${file.name}. Only DOCX, TXT, and MD files are supported.`);
+          return false;
+        }
+        
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+          toast.error(`File too large: ${file.name}. Maximum size is 10MB.`);
+          return false;
+        }
+        
+        return true;
+      });
+      
+      setUploadedFiles(prev => [...prev, ...validFiles]);
     }
   };
 
@@ -105,6 +153,9 @@ const DocumentUpload = () => {
       return;
     }
 
+    // Set uploading state for all files
+    setUploadingFiles(new Set(uploadedFiles.map(file => file.name)));
+    
     uploadFilesMutation.mutate(uploadedFiles);
   };
 
@@ -128,8 +179,6 @@ const DocumentUpload = () => {
   const getFileIcon = (fileName) => {
     const extension = fileName.toLowerCase().split('.').pop();
     switch (extension) {
-      case 'pdf':
-        return <FileText className="h-5 w-5 text-red-500" />;
       case 'docx':
         return <FileText className="h-5 w-5 text-blue-500" />;
       case 'txt':
@@ -219,12 +268,12 @@ const DocumentUpload = () => {
               Drop files here or click to browse
             </p>
             <p className="text-gray-600 mb-4">
-              Supports PDF, DOCX, TXT, and MD files (max 10MB each)
+              Supports DOCX, TXT, and MD files (max 10MB each)
             </p>
             <input
               type="file"
               multiple
-              accept=".pdf,.docx,.txt,.md"
+              accept=".docx,.txt,.md"
               onChange={handleFileSelect}
               className="hidden"
               id="file-upload"
@@ -246,18 +295,24 @@ const DocumentUpload = () => {
                 {uploadedFiles.map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      {getFileIcon(file.name)}
+                      {uploadingFiles.has(file.name) ? (
+                        <Loader2 className="h-5 w-5 text-primary-600 animate-spin" />
+                      ) : (
+                        getFileIcon(file.name)
+                      )}
                       <div>
                         <p className="font-medium text-gray-900">{file.name}</p>
                         <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    {!uploadingFiles.has(file.name) && (
+                      <button
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -265,7 +320,7 @@ const DocumentUpload = () => {
               <div className="mt-4 flex space-x-3">
                 <button
                   onClick={handleFileUpload}
-                  disabled={uploadFilesMutation.isLoading}
+                  disabled={uploadFilesMutation.isLoading || uploadedFiles.length === 0}
                   className="btn-primary flex items-center"
                 >
                   {uploadFilesMutation.isLoading ? (

@@ -11,14 +11,14 @@ const upload = multer({
     files: 5 // Max 5 files at once
   },
   fileFilter: (req, file, cb) => {
-    // Check file type - temporarily only allow text files
-    const allowedTypes = ['.txt', '.md'];
+    // Check file type - support DOCX, TXT, and MD files
+    const allowedTypes = ['.docx', '.txt', '.md'];
     const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
     
     if (allowedTypes.includes(fileExtension)) {
       cb(null, true);
     } else {
-      cb(new Error(`Unsupported file type: ${fileExtension}. Only .txt and .md files are supported in this version.`));
+      cb(new Error(`Unsupported file type: ${fileExtension}. Only DOCX, TXT, and MD files are supported.`));
     }
   }
 });

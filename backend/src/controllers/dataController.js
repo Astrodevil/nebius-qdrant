@@ -237,15 +237,15 @@ class DataController {
             throw new Error(`Unsupported file type: ${path.extname(file.originalname)}`);
           }
 
-          // Save file temporarily
-          const filePath = path.join(uploadDir, file.filename);
-          fs.writeFileSync(filePath, file.buffer);
+          // Save file temporarily to disk for processing
+          const tempFilePath = path.join(uploadDir, `${Date.now()}-${file.originalname}`);
+          fs.writeFileSync(tempFilePath, file.buffer);
 
           // Process file
-          const processedFile = await documentService.processFile(filePath, file.originalname);
+          const processedFile = await documentService.processFile(tempFilePath, file.originalname);
           
           // Clean up temporary file
-          fs.unlinkSync(filePath);
+          fs.unlinkSync(tempFilePath);
 
           uploadedFiles.push(processedFile);
         } catch (error) {
@@ -254,6 +254,15 @@ class DataController {
             fileName: file.originalname,
             error: error.message
           });
+          
+          // Clean up temp file if it exists
+          try {
+            if (fs.existsSync(tempFilePath)) {
+              fs.unlinkSync(tempFilePath);
+            }
+          } catch (cleanupError) {
+            console.error('Failed to cleanup temp file:', cleanupError);
+          }
         }
       }
 

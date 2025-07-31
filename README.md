@@ -74,10 +74,8 @@ The platform supports two main workflows for content generation:
 **Purpose**: Upload and process documents to provide context for RAG-enhanced content generation.
 
 **Supported Formats**:
-- Text files (.txt, .md)
+- Text files (.txt, .md, .docx)
 - URLs (web pages)
-- JSON files
-- CSV files
 
 **Process**:
 1. Upload documents through the web interface

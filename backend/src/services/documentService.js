@@ -1,18 +1,14 @@
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
-// Temporarily comment out problematic dependencies
-// const { PDFExtract } = require('pdf.js-extract');
-// const mammoth = require('mammoth');
+const mammoth = require('mammoth');
 const cheerio = require('cheerio');
 const { v4: uuidv4 } = require('uuid');
 
 class DocumentService {
   constructor() {
-    // this.pdfExtract = new PDFExtract();
     this.supportedFileTypes = {
-      // '.pdf': this.extractPDFText,
-      // '.docx': this.extractDocxText,
+      '.docx': this.extractDocxText,
       '.txt': this.extractTxtText,
       '.md': this.extractTxtText
     };
@@ -42,19 +38,10 @@ class DocumentService {
     }
   }
 
-  async extractPDFText(filePath) {
-    try {
-      // Placeholder for PDF extraction
-      throw new Error('PDF extraction not available in this version');
-    } catch (error) {
-      throw new Error(`PDF extraction failed: ${error.message}`);
-    }
-  }
-
   async extractDocxText(filePath) {
     try {
-      // Placeholder for DOCX extraction
-      throw new Error('DOCX extraction not available in this version');
+      const result = await mammoth.extractRawText({ path: filePath });
+      return result.value;
     } catch (error) {
       throw new Error(`DOCX extraction failed: ${error.message}`);
     }
