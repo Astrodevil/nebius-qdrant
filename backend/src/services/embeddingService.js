@@ -3,23 +3,23 @@ const { v4: uuidv4 } = require('uuid');
 
 class EmbeddingService {
   constructor() {
-    this.apiUrl = process.env.EMBEDDING_SERVICE_URL || 'https://api.openai.com/v1/embeddings';
-    this.apiKey = process.env.EMBEDDING_SERVICE_API_KEY;
-    this.model = 'text-embedding-ada-002';
+    this.apiUrl = process.env.NEBIUS_API_URL || 'https://api.studio.nebius.com/v1';
+    this.apiKey = process.env.NEBIUS_API_KEY;
+    this.model = 'Qwen/Qwen3-Embedding-8B';
     
     if (!this.apiKey) {
-      console.warn('⚠️ EMBEDDING_SERVICE_API_KEY not set. Embedding service will not work properly.');
+      console.warn('⚠️ NEBIUS_API_KEY not set. Embedding service will not work properly.');
     }
   }
 
   async generateEmbedding(text) {
     try {
       if (!this.apiKey) {
-        throw new Error('Embedding API key not configured');
+        throw new Error('Nebius API key not configured');
       }
 
       const response = await axios.post(
-        this.apiUrl,
+        `${this.apiUrl}/embeddings`,
         {
           input: text,
           model: this.model
@@ -42,11 +42,11 @@ class EmbeddingService {
   async generateEmbeddings(texts) {
     try {
       if (!this.apiKey) {
-        throw new Error('Embedding API key not configured');
+        throw new Error('Nebius API key not configured');
       }
 
       const response = await axios.post(
-        this.apiUrl,
+        `${this.apiUrl}/embeddings`,
         {
           input: texts,
           model: this.model
@@ -169,7 +169,7 @@ class EmbeddingService {
   async validateCredentials() {
     try {
       if (!this.apiKey) {
-        return { valid: false, error: 'Missing API key' };
+        return { valid: false, error: 'Missing Nebius API key' };
       }
 
       // Test with a simple text

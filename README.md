@@ -10,7 +10,7 @@ A modern content generation platform that creates social media posts, articles, 
 - Node.js 18+
 - Docker and Docker Compose
 - Nebius API key
-- OpenAI API key (for embeddings)
+- Nebius API key (for both embeddings and content generation)
 
 ### Setup
 
@@ -29,7 +29,6 @@ PORT=3001
 NODE_ENV=development
 QDRANT_URL=http://localhost:6333
 NEBIUS_API_KEY=your_nebius_api_key_here
-EMBEDDING_SERVICE_API_KEY=your_openai_api_key_here
 CORS_ORIGIN=http://localhost:3000
 
 # Frontend (.env)
@@ -71,7 +70,7 @@ The platform supports two main workflows for content generation:
    - Engagement strategies
 
 **Features**:
-- Uses Nebius AI (Llama-3.3-70B-Instruct model)
+- Uses Nebius AI Studio (Llama-3.3-70B-Instruct model for generation, Qwen/Qwen3-Embedding-8B for embeddings)
 - RAG-enhanced generation using uploaded document context
 - Provides formatted, ready-to-use content
 - Stores generation history
@@ -89,14 +88,14 @@ The platform supports two main workflows for content generation:
 1. Upload documents through the web interface
 2. Automatic content extraction and processing
 3. Document chunking (1000 words with 200-word overlap)
-4. Vector embedding generation using OpenAI
-5. Storage in Qdrant vector database
+4. Vector embedding generation using Nebius AI Studio (Qwen/Qwen3-Embedding-8B)
+5. Storage in Qdrant Cloud vector database
 6. Context retrieval for content generation
 
 **Features**:
 - Automatic content extraction from URLs
 - Intelligent document chunking
-- Vector embedding for semantic search
+- Vector embedding for semantic search using Nebius Embedding Qwen/Qwen3-Embedding-8B model
 - UUID-based point IDs for reliability
 - Context-aware content generation
 
@@ -129,7 +128,6 @@ cp frontend/env.example frontend/.env
 
 # Edit backend/.env with your API keys
 NEBIUS_API_KEY=your_nebius_api_key
-EMBEDDING_SERVICE_API_KEY=your_openai_api_key
 ```
 
 4. **Start Qdrant database:**
@@ -177,7 +175,7 @@ nebius-qdrant/
 │   │   ├── services/        # Business logic
 │   │   │   ├── nebiusService.js        # Nebius AI integration
 │   │   │   ├── qdrantService.js        # Vector database operations
-│   │   │   ├── embeddingService.js     # OpenAI embeddings
+│   │   │   ├── embeddingService.js     # Nebius AI embeddings
 │   │   │   └── documentService.js      # Document processing
 │   │   └── utils/          # Utilities
 │   │       └── formatter.js            # Response formatting
@@ -221,7 +219,7 @@ nebius-qdrant/
 
 ## Features
 
-- **AI-Powered Content**: Uses Nebius AI (Llama-3.3-70B-Instruct) for high-quality content generation
+- **AI-Powered Content**: Uses Nebius AI Studio (Llama-3.3-70B-Instruct for generation, Qwen/Qwen3-Embedding-8B for embeddings) for high-quality content generation
 - **RAG-Enhanced Generation**: Context-aware content creation using uploaded documents
 - **Document Processing**: Automatic chunking, embedding, and storage
 - **Vector Search**: Qdrant integration for semantic search and context retrieval

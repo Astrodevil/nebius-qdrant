@@ -5,7 +5,7 @@ class QdrantService {
     this.url = process.env.QDRANT_URL || 'http://localhost:6333';
     this.apiKey = process.env.QDRANT_API_KEY || null;
     this.collectionName = process.env.QDRANT_COLLECTION_NAME || 'company_data';
-    this.vectorSize = 1536; // OpenAI embedding size
+    this.vectorSize = 1536; 
     
     // Initialize the Qdrant client
     this.client = new QdrantClient({
